@@ -1,0 +1,514 @@
+{% assign avg_rating = block.settings.product.metafields.demo.avg_rating.value | round %}
+<style>
+    .hover-img img {
+        opacity: 0.8;
+        transition: opacity 0.3s ease;
+        width: 80px;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 75%; /* Adjust width as needed */
+        position: relative;
+        top: 10%;
+        transform: translateY(-10%);
+        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+        border-radius: 10px; /* Added border radius */
+        display: flex;
+        flex-direction: column;
+
+    }
+
+    .modal-header {
+        padding: 0 0 40px 0px;
+        font-size: 24px;
+        text-align: center;
+        border: none;
+        font-weight: bold;
+    }
+
+    .modal-input {
+        width: 80%;
+        padding: 10px;
+        margin: 20px 0;
+        display: block;
+        border: 1px solid #ddd;
+        border-radius: 5px; /* Added border radius to input */
+        box-sizing: border-box;
+    }
+
+    .close_style {
+        position: fixed;
+    }
+
+    .search-box {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        padding: 20;
+        border-radius: 10%;
+        padding-top: 10px;
+    }
+
+    .search-input {
+        width: 400px;
+        padding: 10px 20px;
+        font-size: 16px;
+        border: 1px solid #ddd;
+        border-radius: 50px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .search-button {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        background: none;
+        border: none;
+        outline: none;
+        padding: 0 20px;
+        color: #333;
+        font-size: 18px;
+        border-radius: 0 50px 50px 0;
+    }
+
+    .search-input::placeholder {
+        color: #aaa;
+    }
+
+    /* .search-button {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: blue;
+        color: white;
+        border: none;
+        border-radius: 0 5px 5px 0;
+        cursor: pointer;
+        outline: none;
+    } */
+
+    .search-button:hover {
+        background-color: darkblue;
+    }
+
+    #results {
+        display: none;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 20px;
+        padding: 20px;
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        margin-top: 20px;
+        width: 100%;
+        box-sizing: border-box;
+        max-height: 85vh; /* Adjust as needed */
+        overflow-y: auto;
+    /
+    }
+
+    #results img {
+
+        border-radius: 8px;
+        /* box-shadow: 0 2px 4px rgba(0,0,0,0.1); */
+    }
+
+    .card-hover-effect {
+        transition: transform 0.3s ease-in-out;
+    }
+
+    .card-hover-effect:hover {
+        transform: translateY(-5px); /* Moves the card up by 5 pixels */
+        cursor: pointer; /* This makes the cursor a hand symbol on hover */
+
+    }
+
+    .shadowbox {
+        box-shadow: 5px 5px 0px #798c9c2e;
+    }
+
+    .sidebar {
+        padding-left: 10em;
+    }
+
+    .sidebar-box {
+        /* margin-bottom: 4em; */
+        font-size: 15px;
+        width: 100%;
+        float: left;
+        background: #fff;
+    }
+
+    .search-form-wrap {
+        /* margin-bottom: 5em; */
+        display: block;
+    }
+
+    .search-form {
+        .form-group {
+            position: relative;
+            margin: 0;
+            border-radius: 5px;
+            border: 2px solid rgba(1, 82, 140, 255);
+
+            #s {
+                padding-right: 50px;
+                /* background: lighten(black, 97%); */
+                padding: 15px 15px;
+                border: none;
+
+            }
+        }
+
+        .icon {
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+        }
+    }
+
+    .icon-container {
+        width: 6%;
+        height: 100%;
+        position: absolute;
+        margin-left: auto;
+
+        right: 0;
+
+        /* background-image: url(https://cdn.shopify.com/extensions/98255ed5-2aa0-4e0f-9aec-47ab8e382aa8/0.0.0/assets/logo.png); */
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+
+    }
+
+    .icon-container:hover {
+        cursor: pointer;
+    }
+
+    #spinner {
+        display: none;
+        margin-top: 20px;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .form-control {
+        height: 50px;
+    }
+
+
+</style>
+<div style="position: fixed; bottom: 0; right: 0; z-index: 10;">
+    <div class="hover-img">
+        <img src="{{ 'search_icon.png' | asset_url }}" class="clickable-icon" id="openModalIcon">
+    </div>
+
+    <!-- The Modal -->
+    <div id="myModal" class="modal">
+        <!-- Modal content -->
+        <div class="modal-content" id="modalcontent">
+            <span class="close close_style">&times;</span>
+            <div class="modal-header">
+                Deep Search
+            </div>
+
+
+            <div class="sidebar-box search-form-wrap">
+                <form action="#" class="search-form">
+                    <div class="form-group">
+
+                        <div class="icon-container" onclick="iconClicked()"
+                             style="background-image: url({{ 'logo.png' | asset_url }})  ;">
+                            {% comment %} <span class="icon fa fa-search"></span> {% endcomment %}
+                        </div>
+
+                        <input type="text" class="form-control" id="s" placeholder="Type a keyword and hit enter">
+                    </div>
+                </form>
+            </div>
+            <div id="spinner">
+                <div class="d-flex justify-content-center">
+                    <div class="spinner-border" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div id="results"></div>
+        </div>
+
+    </div>
+</div>
+
+
+<script>
+    (function () {
+        var link = document.createElement('link');
+        link.href = 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css'; // Use your hosted Bootstrap CSS file URL here
+        link.rel = 'stylesheet';
+        document.head.appendChild(link);
+    })();
+    (function () {
+        var script = document.createElement('script');
+        script.src = 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js'; // Use your hosted Bootstrap JS file URL here
+        script.onload = function () {
+            // Bootstrap JS is loaded and can be used now
+        };
+        document.body.appendChild(script);
+    })();
+
+    // Get the modal
+    var modal = document.getElementById("myModal");
+
+    // Get the button that opens the modal
+    var btn = document.getElementById("openModalIcon");
+
+    var redirecting = document.getElementById("searchButton");
+
+    let items = [
+        {
+            "image": "http://assets.myntassets.com/v1/images/style/properties/7a5b82d1372a7a5c6de67ae7a314fd91_images.jpg",
+            "title": "Turtle Check Men Navy Blue Shirt"
+        },
+        {
+            "image": "http://assets.myntassets.com/v1/images/style/properties/4850873d0c417e6480a26059f83aac29_images.jpg",
+            "title": "Peter England Men Party Blue Jeans"
+        },
+        {
+            "image": "http://assets.myntassets.com/v1/images/style/properties/8153dc35d9a5420eeb93922067137db6_images.jpg",
+            "title": "Titan Women Silver Watch"
+        },
+        {
+            "image": "http://assets.myntassets.com/v1/images/style/properties/9c1b19682ecf926c296f520d5d6e0972_images.jpg",
+            "title": "Manchester United Men Solid Black Track Pants"
+        }
+        // You can add more objects in the same format
+    ];
+
+
+    // Get the <span> element that closes the modal
+    var span = document.getElementsByClassName("close")[0];
+    var extractedText = 'temp';
+
+    // When the user clicks on the button, open the modal
+    btn.onclick = function () {
+        console.log('clicked')
+        modal.style.display = "block";
+    }
+
+    // When the user clicks on <span> (x), close the modal
+    span.onclick = function () {
+        modal.style.display = "none";
+        const resultsDiv = document.getElementById("results");
+        resultsDiv.style.display = "none";
+
+        const modalCon = document.getElementById("modalcontent");
+        modalCon.style.height = "";
+
+        document.getElementById('s').value = '';
+
+    }
+
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function (event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+            const resultsDiv = document.getElementById("results");
+            resultsDiv.style.display = "none";
+
+            const modalCon = document.getElementById("modalcontent");
+            modalCon.style.height = "";
+
+            document.getElementById('s').value = '';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var searchForm = document.querySelector('.search-form');
+
+
+        searchForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+
+            handleSubmit();
+
+        });
+    });
+
+
+    function iconClicked() {
+        handleSubmit();
+    }
+
+    function handleSubmit() {
+        const shopifyStoreId = "{{ shop.id }}"; // This will embed the Shopify store ID
+        const shopifyStoreUrl = "{{ shop.url }}"; // This will embed the Shopify store ID
+
+
+        const resultsDiv = document.getElementById("results");
+        resultsDiv.innerHTML = ""; // Clear previous results
+        resultsDiv.style.display = "none"; // Clear previous results
+
+        const spinnerDiv = document.getElementById("spinner");
+        spinnerDiv.style.display = "flex";
+        const modalCon = document.getElementById("modalcontent");
+        modalCon.style.height = "";
+        console.log('shops ==>',shopifyStoreUrl)
+
+        var url = shopifyStoreUrl + '/apps/get_health/textencoder/embed';
+        var query = document.getElementById('s').value;
+
+        // Data to send - in this case, the search query
+        var textData = {
+            text: query
+        };
+
+        // Make a POST request to the Flask endpoint
+        fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(textData),
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json(); // Parse the JSON response
+            })
+            .then((dataFromFirstFetch) => {
+                console.log("Response Data from first fetch:", dataFromFirstFetch)
+
+
+                var url = shopifyStoreUrl + '/apps/get_health/djangoapp/Search/textSearch/';
+                dataFromFirstFetch.shopifyStoreId = shopifyStoreId
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken') // Fetch the CSRF token
+                    },
+                    body: JSON.stringify(dataFromFirstFetch) // Convert the JavaScript object to a JSON string
+                })
+                    .then((response) => {
+                        console.log('OKKKK');
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then((data) => {
+                        console.log(data);
+                        const resultsDiv = document.getElementById("results");
+                        resultsDiv.innerHTML = ""; // Clear previous results
+                        resultsDiv.style.display = "flex";
+
+                        const resultheight = document.getElementById("modalcontent");
+                        resultheight.style.height = "inherit";
+                        spinnerDiv.style.display = "none";
+
+                        data.similar_images.forEach((item) => {
+                            // Create the card div
+                            const cardDiv = document.createElement("div");
+                            cardDiv.className = "card card-hover-effect shadowbox"; // Added 'card-hover-effect' class
+                            cardDiv.style.width = "18rem";
+                            cardDiv.style.height = "33rem";
+
+                            // Create the image for the card
+                            const img = document.createElement("img");
+                            img.className = "card-img-top";
+                            // img.src = '/media/reza-testing2.myshopify.com'+item.image;
+                            img.src = item.imageurl
+                            img.alt = "Card image cap";
+
+                            // Create the card body
+                            const cardBody = document.createElement("div");
+                            cardBody.className = "card-body";
+
+                            // Create the paragraph for text inside the card body
+                            const cardText = document.createElement("p");
+                            cardText.className = "card-text";
+                            cardText.textContent = item.titles; // Assuming you want the item title here
+                            cardText.style.fontWeight = "bold";
+                            cardDiv.addEventListener('click', function () {
+                                // window.location.href = 'products/'+item.handles; // Assuming 'item.link' is the URL you want to link to
+                                window.open('products/' + item.handles, '_blank'); // Opens the link in a new tab/window
+
+                            });
+                            // Append the image and card body to the card
+                            cardDiv.appendChild(img);
+                            cardDiv.appendChild(cardBody);
+                            // Append the text to the card body
+                            cardBody.appendChild(cardText);
+                            // Add an event listener to make the entire card clickable
+                            // Finally, append the whole card to the resultsDiv or your chosen container
+                            resultsDiv.appendChild(cardDiv);
+                        });
+
+                        // Update the UI with data here
+                    })
+                    .catch((error) => console.error("Error:", error));
+
+            });
+    }
+
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+</script>
+
+{% schema %}
+{
+  "name": "Star Rating",
+  "target": "section",
+  "settings": [
+    {
+      "type": "product",
+      "id": "product",
+      "label": "product",
+      "autofill": true
+    },
+    {
+      "type": "color",
+      "id": "colour",
+      "label": "Star Colour",
+      "default": "#ff0000"
+    }
+  ]
+}
+{% endschema %}
+
